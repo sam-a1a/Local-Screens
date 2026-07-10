@@ -3,6 +3,8 @@ import { createContext, useContext, useRef, useState, useCallback, useEffect, ty
 interface SyncContextValue {
     syncEnabled: boolean
     setSyncEnabled: (v: boolean) => void
+    inspectEnabled: boolean
+    setInspectEnabled: (v: boolean) => void
     registerFrame: (id: string, win: Window | null) => void
     unregisterFrame: (id: string) => void
     breakpoints: number[]
@@ -11,7 +13,8 @@ interface SyncContextValue {
 const SyncContext = createContext<SyncContextValue | null>(null)
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-    const [syncEnabled, setSyncEnabled] = useState(false)
+    const [syncEnabled, setSyncEnabledState] = useState(false)
+    const [inspectEnabled, setInspectEnabledState] = useState(false)
     const [breakpoints, setBreakpoints] = useState<number[]>([])
     const framesRef = useRef<Map<string, Window>>(new Map())
     const syncEnabledRef = useRef(syncEnabled)
@@ -26,6 +29,17 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     const unregisterFrame = useCallback((id: string) => {
         framesRef.current.delete(id)
+    }, [])
+
+    const setSyncEnabled = useCallback((v: boolean) => {
+        setSyncEnabledState(v)
+    }, [])
+
+    const setInspectEnabled = useCallback((v: boolean) => {
+        setInspectEnabledState(v)
+        framesRef.current.forEach((win) => {
+            win.postMessage({ type: 'localscreens:inspect-toggle', enabled: v }, '*')
+        })
     }, [])
 
     useEffect(() => {
@@ -49,6 +63,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                     const merged = new Set([...prev, ...data.breakpoints])
                     return Array.from(merged).sort((a, b) => a - b)
                 })
+                return
+            }
+
+            if (data.type === 'localscreens:element-selected' && typeof data.selector === 'string') {
+                framesRef.current.forEach((win) => {
+                    win.postMessage({ type: 'localscreens:highlight', selector: data.selector }, '*')
+                })
             }
         }
 
@@ -58,7 +79,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     return (
         <SyncContext.Provider
-            value={{ syncEnabled, setSyncEnabled, registerFrame, unregisterFrame, breakpoints }}
+            value={{
+                syncEnabled,
+                setSyncEnabled,
+                inspectEnabled,
+                setInspectEnabled,
+                registerFrame,
+                unregisterFrame,
+                breakpoints,
+            }}
         >
             {children}
         </SyncContext.Provider>

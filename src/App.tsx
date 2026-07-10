@@ -17,7 +17,7 @@ function AppInner() {
     const [category, setCategory] = useState<Category>('laptop')
     const [reloadKey, setReloadKey] = useState(0)
     const { customDevices, addDevice, removeDevice, exportDevices, importDevices } = useCustomDevices()
-    const { syncEnabled, setSyncEnabled } = useSync()
+    const { syncEnabled, setSyncEnabled, inspectEnabled, setInspectEnabled } = useSync()
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, url)
@@ -38,6 +38,16 @@ function AppInner() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setInspectEnabled(!inspectEnabled)}
+                        className={`text-sm px-3 py-1.5 rounded-lg transition ${
+                            inspectEnabled
+                                ? 'bg-amber-500 text-neutral-950 font-medium'
+                                : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                        }`}
+                    >
+                        {inspectEnabled ? 'Inspect: On' : 'Inspect: Off'}
+                    </button>
                     <button
                         onClick={() => setSyncEnabled(!syncEnabled)}
                         className={`text-sm px-3 py-1.5 rounded-lg transition ${

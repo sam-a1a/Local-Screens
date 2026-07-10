@@ -35,5 +35,40 @@ export function useCustomDevices() {
         setCustomDevices((prev) => prev.filter((d) => d.id !== id))
     }
 
-    return { customDevices, addDevice, removeDevice }
+    function exportDevices() {
+        const blob = new Blob([JSON.stringify(customDevices, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'localscreens-custom-devices.json'
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    function importDevices(file: File) {
+        const reader = new FileReader()
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(reader.result as string) as Device[]
+                const valid = parsed.filter(
+                    (d) =>
+                        typeof d.name === 'string' &&
+                        typeof d.width === 'number' &&
+                        typeof d.height === 'number' &&
+                        typeof d.dpr === 'number'
+                )
+                const withFreshIds = valid.map((d) => ({
+                    ...d,
+                    id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    category: 'custom' as const,
+                }))
+                setCustomDevices((prev) => [...prev, ...withFreshIds])
+            } catch {
+                alert('Could not parse that file — make sure it is a valid LocalScreens JSON export.')
+            }
+        }
+        reader.readAsText(file)
+    }
+
+    return { customDevices, addDevice, removeDevice, exportDevices, importDevices }
 }

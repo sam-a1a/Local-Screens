@@ -13,7 +13,7 @@ export default function App() {
     const [cardWidth, setCardWidth] = useState(320)
     const [category, setCategory] = useState<Category>('laptop')
     const [reloadKey, setReloadKey] = useState(0)
-    const { customDevices, addDevice, removeDevice } = useCustomDevices()
+    const { customDevices, addDevice, removeDevice, exportDevices, importDevices } = useCustomDevices()
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, url)
@@ -45,7 +45,9 @@ export default function App() {
 
             <CategoryFilter selected={category} onSelect={setCategory} />
 
-            {isCustom && <AddCustomDeviceForm onAdd={addDevice} />}
+            {isCustom && (
+                <AddCustomDeviceForm onAdd={addDevice} onExport={exportDevices} onImport={importDevices} />
+            )}
 
             <main className="p-6 flex flex-col items-center gap-6">
                 {filteredDevices.length === 0 && isCustom && (

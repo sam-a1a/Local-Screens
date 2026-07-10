@@ -5,9 +5,10 @@ interface Props {
     device: Device
     url: string
     cardWidth: number
+    onRemove?: (id: string) => void
 }
 
-export default function DeviceFrame({ device, url, cardWidth }: Props) {
+export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props) {
     const [rotated, setRotated] = useState(false)
     const [scale, setScale] = useState(0.25)
 
@@ -36,6 +37,15 @@ export default function DeviceFrame({ device, url, cardWidth }: Props) {
                             title="Rotate device"
                         >
                             Rotate
+                        </button>
+                    )}
+                    {onRemove && (
+                        <button
+                            onClick={() => onRemove(device.id)}
+                            className="text-xs px-2 py-1 rounded bg-neutral-800 hover:bg-red-900 text-neutral-300 transition"
+                            title="Remove device"
+                        >
+                            Remove
                         </button>
                     )}
                 </div>

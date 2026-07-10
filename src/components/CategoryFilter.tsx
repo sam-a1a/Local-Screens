@@ -1,4 +1,4 @@
-import type { Category } from '../App'
+import type { Category } from '../data/devices'
 
 interface Props {
     selected: Category
@@ -10,6 +10,7 @@ const CATEGORIES: { id: Category; label: string }[] = [
     { id: 'desktop', label: 'Desktops' },
     { id: 'tablet', label: 'Tablets' },
     { id: 'phone', label: 'Phones' },
+    { id: 'custom', label: 'Custom' },
 ]
 
 export default function CategoryFilter({ selected, onSelect }: Props) {

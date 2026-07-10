@@ -1,10 +1,12 @@
+export type Category = 'laptop' | 'desktop' | 'tablet' | 'phone' | 'custom'
+
 export interface Device {
     id: string
     name: string
     width: number
     height: number
     dpr: number
-    category: 'laptop' | 'desktop' | 'tablet' | 'phone'
+    category: Category
 }
 
 export const devices: Device[] = [

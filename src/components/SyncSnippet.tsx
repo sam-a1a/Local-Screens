@@ -73,6 +73,39 @@ const SNIPPET = `;(function () {
     window.addEventListener('load', scanBreakpoints)
   }
   setTimeout(scanBreakpoints, 800)
+
+  function checkOverflow() {
+    var doc = document.documentElement
+    var actualWidth = doc.scrollWidth
+    var viewportWidth = window.innerWidth
+    var overflowAmount = actualWidth - viewportWidth
+    if (window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: 'localscreens:overflow',
+          overflowing: overflowAmount > 2,
+          amount: Math.max(0, Math.round(overflowAmount)),
+        },
+        '*'
+      )
+    }
+  }
+
+  var overflowTimer = null
+  function scheduleOverflowCheck() {
+    clearTimeout(overflowTimer)
+    overflowTimer = setTimeout(checkOverflow, 150)
+  }
+
+  window.addEventListener('resize', scheduleOverflowCheck)
+  window.addEventListener('load', scheduleOverflowCheck)
+  setTimeout(checkOverflow, 500)
+  setTimeout(checkOverflow, 1500)
+
+  if (window.MutationObserver) {
+    var observer = new MutationObserver(scheduleOverflowCheck)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true })
+  }
 })();`
 
 export default function SyncSnippet() {
@@ -91,7 +124,7 @@ export default function SyncSnippet() {
                 onClick={() => setOpen((o) => !o)}
                 className="w-full text-left px-6 py-2 text-xs text-neutral-400 hover:text-neutral-200 transition"
             >
-                {open ? 'Hide' : 'Show'} sync snippet (scroll sync + breakpoint detection)
+                {open ? 'Hide' : 'Show'} sync snippet (scroll sync + breakpoints + overflow detection)
             </button>
             {open && (
                 <div className="px-6 pb-4">
@@ -106,8 +139,8 @@ export default function SyncSnippet() {
                     </button>
                     <p className="text-xs text-neutral-500 mt-2">
                         Paste this as an inline script near the end of your app's index.html. It reports
-                        scroll position for sync, and scans your own stylesheets for @media breakpoints —
-                        nothing is sent anywhere except back to this tab via postMessage.
+                        scroll position for sync, detected @media breakpoints, and horizontal overflow —
+                        nothing leaves the page except back to this tab via postMessage.
                     </p>
                 </div>
             )}

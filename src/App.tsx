@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react'
-import { devices } from './data/devices'
+import { devices, type Device } from './data/devices'
 import DeviceFrame from './components/DeviceFrame'
 import UrlBar from './components/UrlBar'
+import CategoryFilter from './components/CategoryFilter'
 
 const STORAGE_KEY = 'localscreens:last-url'
+
+export type Category = Device['category']
 
 export default function App() {
     const [url, setUrl] = useState(() => localStorage.getItem(STORAGE_KEY) ?? 'http://localhost:3000')
     const [cardWidth, setCardWidth] = useState(320)
+    const [category, setCategory] = useState<Category>('laptop')
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, url)
     }, [url])
+
+    const filteredDevices = devices.filter((d) => d.category === category)
 
     return (
         <div className="min-h-screen">
@@ -24,8 +30,10 @@ export default function App() {
 
             <UrlBar url={url} onSubmit={setUrl} cardWidth={cardWidth} onCardWidthChange={setCardWidth} />
 
+            <CategoryFilter selected={category} onSelect={setCategory} />
+
             <main className="p-6 flex flex-col items-center gap-6">
-                {devices.map((device) => (
+                {filteredDevices.map((device) => (
                     <DeviceFrame key={device.id} device={device} url={url} cardWidth={cardWidth} />
                 ))}
             </main>

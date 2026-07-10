@@ -5,12 +5,14 @@ interface SyncContextValue {
     setSyncEnabled: (v: boolean) => void
     registerFrame: (id: string, win: Window | null) => void
     unregisterFrame: (id: string) => void
+    breakpoints: number[]
 }
 
 const SyncContext = createContext<SyncContextValue | null>(null)
 
 export function SyncProvider({ children }: { children: ReactNode }) {
     const [syncEnabled, setSyncEnabled] = useState(false)
+    const [breakpoints, setBreakpoints] = useState<number[]>([])
     const framesRef = useRef<Map<string, Window>>(new Map())
     const syncEnabledRef = useRef(syncEnabled)
 
@@ -28,17 +30,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         function handleMessage(event: MessageEvent) {
-            if (!syncEnabledRef.current) return
             const data = event.data
-            if (!data || data.type !== 'localscreens:scroll') return
+            if (!data) return
 
-            framesRef.current.forEach((win) => {
-                if (win === event.source) return
-                win.postMessage(
-                    { type: 'localscreens:set-scroll', ratioX: data.ratioX, ratioY: data.ratioY },
-                    '*'
-                )
-            })
+            if (data.type === 'localscreens:scroll' && syncEnabledRef.current) {
+                framesRef.current.forEach((win) => {
+                    if (win === event.source) return
+                    win.postMessage(
+                        { type: 'localscreens:set-scroll', ratioX: data.ratioX, ratioY: data.ratioY },
+                        '*'
+                    )
+                })
+                return
+            }
+
+            if (data.type === 'localscreens:breakpoints' && Array.isArray(data.breakpoints)) {
+                setBreakpoints((prev) => {
+                    const merged = new Set([...prev, ...data.breakpoints])
+                    return Array.from(merged).sort((a, b) => a - b)
+                })
+            }
         }
 
         window.addEventListener('message', handleMessage)
@@ -46,7 +57,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }, [])
 
     return (
-        <SyncContext.Provider value={{ syncEnabled, setSyncEnabled, registerFrame, unregisterFrame }}>
+        <SyncContext.Provider
+            value={{ syncEnabled, setSyncEnabled, registerFrame, unregisterFrame, breakpoints }}
+        >
             {children}
         </SyncContext.Provider>
     )

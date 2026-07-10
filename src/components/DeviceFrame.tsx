@@ -9,13 +9,15 @@ interface Props {
     onRemove?: (id: string) => void
 }
 
+const NEAR_THRESHOLD = 24
+
 export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props) {
     const [rotated, setRotated] = useState(false)
     const [scale, setScale] = useState(0.25)
     const [isVisible, setIsVisible] = useState(false)
     const wrapperRef = useRef<HTMLDivElement>(null)
     const iframeRef = useRef<HTMLIFrameElement>(null)
-    const { registerFrame, unregisterFrame } = useSync()
+    const { registerFrame, unregisterFrame, breakpoints } = useSync()
 
     const effectiveWidth = rotated ? device.height : device.width
     const effectiveHeight = rotated ? device.width : device.height
@@ -53,12 +55,31 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
     const scaledHeight = effectiveHeight * scale
     const canRotate = device.category === 'tablet' || device.category === 'phone'
 
+    let nearestBreakpoint: number | null = null
+    let distance = Infinity
+    for (const bp of breakpoints) {
+        const d = Math.abs(bp - effectiveWidth)
+        if (d < distance) {
+            distance = d
+            nearestBreakpoint = bp
+        }
+    }
+    const isNearBreakpoint = nearestBreakpoint !== null && distance <= NEAR_THRESHOLD
+
     return (
         <div ref={wrapperRef} className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden shadow-lg">
             <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800">
                 <span className="text-sm font-medium text-neutral-200">{device.name}</span>
                 <div className="flex items-center gap-3">
-          <span className="text-xs text-neutral-500">
+                    {isNearBreakpoint && (
+                        <span
+                            className="text-xs px-2 py-0.5 rounded bg-amber-900/50 text-amber-400"
+                            title={`Within ${distance}px of the ${nearestBreakpoint}px breakpoint`}
+                        >
+              near {nearestBreakpoint}px breakpoint
+            </span>
+                    )}
+                    <span className="text-xs text-neutral-500">
             {effectiveWidth}x{effectiveHeight} - {device.dpr}x
           </span>
                     {canRotate && (

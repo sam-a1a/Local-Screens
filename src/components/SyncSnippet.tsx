@@ -32,6 +32,47 @@ const SNIPPET = `;(function () {
     var scrollWidth = Math.max(doc.scrollWidth, body.scrollWidth) - window.innerWidth
     window.scrollTo(data.ratioX * scrollWidth, data.ratioY * scrollHeight)
   })
+
+  function scanBreakpoints() {
+    var found = {}
+    var sheets = document.styleSheets
+    for (var i = 0; i < sheets.length; i++) {
+      var rules
+      try {
+        rules = sheets[i].cssRules
+      } catch (e) {
+        continue
+      }
+      if (!rules) continue
+      for (var j = 0; j < rules.length; j++) {
+        var rule = rules[j]
+        if (rule.type === CSSRule.MEDIA_RULE) {
+          var text = rule.conditionText || rule.media.mediaText
+          var matches = text.match(/(min|max)-width:\\s*(\\d+(?:\\.\\d+)?)(px|em|rem)/g)
+          if (!matches) continue
+          for (var k = 0; k < matches.length; k++) {
+            var m = matches[k].match(/(\\d+(?:\\.\\d+)?)(px|em|rem)/)
+            if (!m) continue
+            var value = parseFloat(m[1])
+            var unit = m[2]
+            var px = unit === 'px' ? value : value * 16
+            found[Math.round(px)] = true
+          }
+        }
+      }
+    }
+    var list = Object.keys(found).map(Number).sort(function (a, b) { return a - b })
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'localscreens:breakpoints', breakpoints: list }, '*')
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    scanBreakpoints()
+  } else {
+    window.addEventListener('load', scanBreakpoints)
+  }
+  setTimeout(scanBreakpoints, 800)
 })();`
 
 export default function SyncSnippet() {
@@ -50,7 +91,7 @@ export default function SyncSnippet() {
                 onClick={() => setOpen((o) => !o)}
                 className="w-full text-left px-6 py-2 text-xs text-neutral-400 hover:text-neutral-200 transition"
             >
-                {open ? 'Hide' : 'Show'} sync snippet (paste into your app once to enable scroll sync)
+                {open ? 'Hide' : 'Show'} sync snippet (scroll sync + breakpoint detection)
             </button>
             {open && (
                 <div className="px-6 pb-4">
@@ -64,8 +105,9 @@ export default function SyncSnippet() {
                         {copied ? 'Copied!' : 'Copy snippet'}
                     </button>
                     <p className="text-xs text-neutral-500 mt-2">
-                        Add this as an inline script tag near the end of your app's index.html (or any page
-                        you're testing). It only reports scroll position via postMessage — nothing else.
+                        Paste this as an inline script near the end of your app's index.html. It reports
+                        scroll position for sync, and scans your own stylesheets for @media breakpoints —
+                        nothing is sent anywhere except back to this tab via postMessage.
                     </p>
                 </div>
             )}

@@ -7,6 +7,7 @@ import UrlBar from './components/UrlBar'
 import CategoryFilter from './components/CategoryFilter'
 import AddCustomDeviceForm from './components/AddCustomDeviceForm'
 import SyncSnippet from './components/SyncSnippet'
+import BreakpointBar from './components/BreakpointBar'
 
 const STORAGE_KEY = 'localscreens:last-url'
 
@@ -59,6 +60,7 @@ function AppInner() {
             <UrlBar url={url} onSubmit={setUrl} cardWidth={cardWidth} onCardWidthChange={setCardWidth} />
 
             <SyncSnippet />
+            <BreakpointBar />
 
             <CategoryFilter selected={category} onSelect={setCategory} />
 

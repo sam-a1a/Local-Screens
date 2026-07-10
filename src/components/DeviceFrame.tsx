@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Device } from '../data/devices'
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
 export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props) {
     const [rotated, setRotated] = useState(false)
     const [scale, setScale] = useState(0.25)
+    const [isVisible, setIsVisible] = useState(false)
+    const wrapperRef = useRef<HTMLDivElement>(null)
 
     const effectiveWidth = rotated ? device.height : device.width
     const effectiveHeight = rotated ? device.width : device.height
@@ -19,11 +21,29 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
         setScale(cardWidth / effectiveWidth)
     }, [cardWidth, effectiveWidth])
 
+    useEffect(() => {
+        const node = wrapperRef.current
+        if (!node) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setIsVisible(true)
+                    observer.disconnect()
+                }
+            },
+            { rootMargin: '200px' }
+        )
+
+        observer.observe(node)
+        return () => observer.disconnect()
+    }, [])
+
     const scaledHeight = effectiveHeight * scale
     const canRotate = device.category === 'tablet' || device.category === 'phone'
 
     return (
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden shadow-lg">
+        <div ref={wrapperRef} className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden shadow-lg">
             <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800">
                 <span className="text-sm font-medium text-neutral-200">{device.name}</span>
                 <div className="flex items-center gap-3">
@@ -55,7 +75,19 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
                 className="relative bg-neutral-950"
                 style={{ width: cardWidth, height: scaledHeight }}
             >
-                {url ? (
+                {!url && (
+                    <div className="flex items-center justify-center h-full text-neutral-600 text-sm">
+                        Enter a URL above
+                    </div>
+                )}
+
+                {url && !isVisible && (
+                    <div className="flex items-center justify-center h-full text-neutral-600 text-sm">
+                        Scroll into view to load
+                    </div>
+                )}
+
+                {url && isVisible && (
                     <div
                         style={{
                             width: effectiveWidth,
@@ -71,10 +103,6 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
                             className="border-0"
                             title={device.name}
                         />
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-center h-full text-neutral-600 text-sm">
-                        Enter a URL above
                     </div>
                 )}
             </div>

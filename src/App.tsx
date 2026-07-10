@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
 import { devices, type Category } from './data/devices'
 import { useCustomDevices } from './hooks/useCustomDevices'
+import { SyncProvider, useSync } from './context/SyncContext'
 import DeviceFrame from './components/DeviceFrame'
 import UrlBar from './components/UrlBar'
 import CategoryFilter from './components/CategoryFilter'
 import AddCustomDeviceForm from './components/AddCustomDeviceForm'
+import SyncSnippet from './components/SyncSnippet'
 
 const STORAGE_KEY = 'localscreens:last-url'
 
-export default function App() {
+function AppInner() {
     const [url, setUrl] = useState(() => localStorage.getItem(STORAGE_KEY) ?? 'http://localhost:3000')
     const [cardWidth, setCardWidth] = useState(320)
     const [category, setCategory] = useState<Category>('laptop')
     const [reloadKey, setReloadKey] = useState(0)
     const { customDevices, addDevice, removeDevice, exportDevices, importDevices } = useCustomDevices()
+    const { syncEnabled, setSyncEnabled } = useSync()
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, url)
@@ -33,15 +36,29 @@ export default function App() {
                         Preview your local dev server across real device viewports.
                     </p>
                 </div>
-                <button
-                    onClick={() => setReloadKey((k) => k + 1)}
-                    className="text-sm px-3 py-1.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition"
-                >
-                    Reload All
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setSyncEnabled(!syncEnabled)}
+                        className={`text-sm px-3 py-1.5 rounded-lg transition ${
+                            syncEnabled
+                                ? 'bg-emerald-500 text-neutral-950 font-medium'
+                                : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                        }`}
+                    >
+                        {syncEnabled ? 'Sync scrolling: On' : 'Sync scrolling: Off'}
+                    </button>
+                    <button
+                        onClick={() => setReloadKey((k) => k + 1)}
+                        className="text-sm px-3 py-1.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition"
+                    >
+                        Reload All
+                    </button>
+                </div>
             </header>
 
             <UrlBar url={url} onSubmit={setUrl} cardWidth={cardWidth} onCardWidthChange={setCardWidth} />
+
+            <SyncSnippet />
 
             <CategoryFilter selected={category} onSelect={setCategory} />
 
@@ -64,5 +81,13 @@ export default function App() {
                 ))}
             </main>
         </div>
+    )
+}
+
+export default function App() {
+    return (
+        <SyncProvider>
+            <AppInner />
+        </SyncProvider>
     )
 }

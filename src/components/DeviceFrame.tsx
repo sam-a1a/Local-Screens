@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Device } from '../data/devices'
+import { useSync } from '../context/SyncContext'
 
 interface Props {
     device: Device
@@ -13,6 +14,8 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
     const [scale, setScale] = useState(0.25)
     const [isVisible, setIsVisible] = useState(false)
     const wrapperRef = useRef<HTMLDivElement>(null)
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+    const { registerFrame, unregisterFrame } = useSync()
 
     const effectiveWidth = rotated ? device.height : device.width
     const effectiveHeight = rotated ? device.width : device.height
@@ -38,6 +41,14 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
         observer.observe(node)
         return () => observer.disconnect()
     }, [])
+
+    useEffect(() => {
+        return () => unregisterFrame(device.id)
+    }, [device.id, unregisterFrame])
+
+    function handleIframeLoad() {
+        registerFrame(device.id, iframeRef.current?.contentWindow ?? null)
+    }
 
     const scaledHeight = effectiveHeight * scale
     const canRotate = device.category === 'tablet' || device.category === 'phone'
@@ -97,11 +108,13 @@ export default function DeviceFrame({ device, url, cardWidth, onRemove }: Props)
                         }}
                     >
                         <iframe
+                            ref={iframeRef}
                             src={url}
                             width={effectiveWidth}
                             height={effectiveHeight}
                             className="border-0"
                             title={device.name}
+                            onLoad={handleIframeLoad}
                         />
                     </div>
                 )}
